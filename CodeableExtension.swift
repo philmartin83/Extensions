@@ -8,47 +8,43 @@ import Foundation
 
 extension JSONDecoder{
     
-    func decoderWithURLString<T: Decodable> (_ type: T.Type, fromURL url: String, completion: @escaping (T?, Error?) -> Void){
+   func decoderWithURLString<T: Decodable> (_ type: T.Type, fromURL url: String, completion: @escaping (Result<T, Error>) -> Void){
         let url = URL(string: url)
         // we can force unwrap the url  here becasue the URL should never be wrong if it is we need to crash or you could add a 'fatalError' and return a message
         URLSession.shared.dataTask(with: url!) { (data, response, error) in
-            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
             // if the response is good then decode to our object else return the error
-            if let data = data, statusCode >= 200 && statusCode < 300{
+            if let data = data{
                 do {
-                    // try to decode the response.
-                    let result = try JSONDecoder().decode(type, from: data)
-                    completion(result, nil) // send back the good stuff :)
+                    // try to decode the repsonse
+                    print(String(data: data, encoding: .utf8)!)
+                    let decode = JSONDecoder()
+                    let result = try decode.decode(type, from: data)
+                    completion(.success(result)) // send back the object on completion
                 } catch let error{
-                    completion(nil, error)
+                    // if the try fails send the error (Can be used in an UIAlertController keeping UI away from networking :) )
+                    completion(.failure(error))
                 }
-            }else{
-                // don't return the objet and return the error response
-                completion(nil, error)
-
             }
             
         }.resume()
     }
     
-    func decoderWithRequest<T: Decodable> (_ type: T.Type, fromURLRequest urlRequest: URLRequest , completion: @escaping (T?, Error?) -> Void){
+    func decoderWithRequest<T: Decodable> (_ type: T.Type, fromURLRequest urlRequest: URLRequest , completion: @escaping (Result<T, Error>) -> Void){
         // use the passed in URLRequest to make communication with the server, all the requred headers should be added prior to call this fucntion
         URLSession.shared.dataTask(with: urlRequest) { (data, response, error) in
             // get our response status code
-            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
             // if the response is good then decode to our object else return the error
-            if let data = data, statusCode >= 200 && statusCode < 300{
+            if let data = data{
                 do {
                     // try to decode the repsonse
-                    let result = try JSONDecoder().decode(type, from: data)
-                    completion(result, nil) // send back the object on completion
+                    print(String(data: data, encoding: .utf8)!)
+                    let decode = JSONDecoder()
+                    let result = try decode.decode(type, from: data)
+                    completion(.success(result)) // send back the object on completion
                 } catch let error{
                     // if the try fails send the error (Can be used in an UIAlertController keeping UI away from networking :) )
-                    completion(nil, error)
+                    completion(.failure(error))
                 }
-            }else{
-                // its all gone wrong no network or server error :( SAD TIMES!!!!
-                completion(nil, error)
             }
         }.resume()
     }
